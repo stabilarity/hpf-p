@@ -49,7 +49,6 @@ data/cache/
 *.cache
 
 # Drafts & docs — NEVER publish
-*.md
 *.docx
 *.pdf
 PLAN.*
@@ -65,3 +64,9 @@ dissertation*
 
 *.wp.html
 HPF*.html
+# Drafts and article content — never publish
+HPF*.md
+PLAN.md
+SPEC*.md
+ROADMAP*.md
+draft*.md
