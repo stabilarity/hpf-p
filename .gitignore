@@ -1,13 +1,65 @@
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+
+# Virtual environments
 venv/
+env/
+ENV/
+.venv/
 .env
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Secrets & config
+.env
+*.env
+keys.json
+secrets.*
+config.local.*
+
+# Logs & temp
 *.log
 *.tmp
-# Never expose dissertation drafts
+*.bak
+*.orig
+
+# Data cache
+data/cache/
+*.cache
+
+# Drafts & docs — NEVER publish
 *.md
 *.docx
-*.html
-PLAN.md
-SPEC.md
-PROMOTION_READY.md
+*.pdf
+PLAN.*
+SPEC.*
+ROADMAP.*
+draft*
+Draft*
+DRAFT*
+article*
+chapter*
+Chapter*
+dissertation*
+
