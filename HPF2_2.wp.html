@@ -1,0 +1,672 @@
+<!-- wp:cover {"url":"https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=1600&q=80","dimRatio":50,"minHeight":400} -->
+<div class="wp-block-cover" style="min-height:400px">
+  <span aria-hidden="true" class="wp-block-cover__background has-background-dim"></span>
+  <img class="wp-block-cover__image-background" src="https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=1600&q=80" alt="" style="object-fit:cover"/>
+  <div class="wp-block-cover__inner-container">
+    <!-- wp:heading {"textAlign":"center","level":1,"style":{"color":{"text":"#ffffff"}}} -->
+    <h1 class="wp-block-heading has-text-align-center" style="color:#ffffff">HPF-P Platform Architecture: From Theoretical Framework to Production System</h1>
+    <!-- /wp:heading -->
+  </div>
+</div>
+<!-- /wp:cover -->
+
+<!-- wp:paragraph {"className":"zenodo-citation"} -->
+<div class="zenodo-citation" style="background:#f0f7ff;border-left:4px solid #2196F3;padding:15px;margin:20px 0;border-radius:4px">
+  📚 <strong>Academic Citation:</strong> Ivchenko, O. (2026). HPF-P Platform Architecture: From Theoretical Framework to Production System. <em>Research article: HPF-P Platform Architecture: From Theoretical Framework to Production System</em>. ONPU.
+  DOI: <a href="https://doi.org/10.5281/zenodo.18855053" target="_blank" rel="noopener noreferrer">10.5281/zenodo.18855053</a>
+</div>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:paragraph -->
+<p>The preceding section established the conceptual foundations of the Decision Readiness Index (DRI) and Decision Readiness Levels (DRL) as diagnostic instruments for governing portfolio decisions under structural uncertainty. The present section describes the architecture of <strong>HPF-P</strong> (<em>Holistic Portfolio Framework — Platform</em>), the production system that operationalises these theoretical constructs into an executable decision-support pipeline for pharmaceutical SKU portfolio management.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>HPF-P transforms the abstract DRI/DRL framework into a concrete computational system that ingests real-world pharmaceutical data, computes decision readiness diagnostics, applies conditionally permitted optimisation strategies, and produces auditable portfolio recommendations. The platform targets commercial pharmaceutical portfolios — the inventory allocation and revenue optimisation decisions faced by Ukrainian manufacturers such as Farmak, Darnitsa, Arterium, Yuria-Pharm, and Zdorovye — rather than clinical trial pipeline management.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This section presents the platform's eight-module pipeline architecture, data contracts, algorithmic specifications, and technology stack, referencing the production implementation throughout.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-1-system-architecture-overview"><strong>2.2.1 System Architecture Overview</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="eight-module-pipeline"><strong>Eight-Module Pipeline</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>HPF-P implements the diagnostic-gated analytical pipeline introduced in Section 2.2 of the HPF framework as a sequential eight-module computation:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>Input(CSV + JSON) → M1 Ingest → M2 DRI/DRL → M3 ML Forecast → M4 Multi-Strategy Optimise → M5 Monte Carlo → M5b Time-Series Simulation → M6 Output Assembly</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>Each module receives the outputs of its predecessors and produces structured diagnostics alongside its primary results. The pipeline is designed such that each transition is <em>conditional</em>: modules M3 through M6 operate only on SKUs that have passed the diagnostic validation of M1 and M2. This architectural constraint directly implements the HPF principle that optimisation is a <em>permitted action</em> contingent upon diagnostic adequacy, not an automatic procedure.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The modules are:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><strong>M1 — Data Ingestion and Validation:</strong> Parses input data, validates schema compliance, cross-references SKU identifiers between data sources, imputes missing values, and computes per-SKU quality flags.</li><li><strong>M2 — DRI Computation and DRL Assignment:</strong> Evaluates five diagnostic dimensions for each SKU and assigns Decision Readiness Levels that govern downstream analytical permissibility.</li><li><strong>M3 — ML Estimation Module:</strong> Fits demand forecasting models with Fourier seasonal features, estimates price elasticity via log-log regression, and computes per-SKU risk scores.</li><li><strong>M4 — Multi-Strategy Portfolio Optimisation:</strong> Generates portfolio weights under eight distinct strategies and selects the best-performing strategy via rapid Monte Carlo evaluation.</li><li><strong>M5 — Monte Carlo Simulation Engine:</strong> Executes 1,000-iteration stochastic simulation to produce portfolio-level risk metrics including VaR-95 and CVaR-95.</li><li><strong>M5b — Time-Series Simulation:</strong> Projects 12-month revenue trajectories across 500 simulation paths for three scenarios (historical, baseline, HPF-optimised) with percentile bands and economic comparison metrics.</li><li><strong>M6 — Output Assembly:</strong> Aggregates all module outputs into a structured response with per-SKU justifications, portfolio metrics, strategy comparisons, and a narrative summary.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="deployment-topology"><strong>Deployment Topology</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>HPF-P operates as a three-tier web application deployed on a single Linux server:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true} -->
+<ol><li><strong>Backend API:</strong> A FastAPI application (Python 3.12) running as a systemd service (hpf-app) on port 8901. The API exposes three endpoints: /api/health (liveness check), /api/sample (demonstration data), and /api/analyze (the full pipeline).</li><li><strong>Frontend presentation layer:</strong> An inline WordPress page served via the hpf-project.php mu-plugin, which provides styling, scenario management, interactive controls, and Chart.js-based visualisation. Predefined scenario data for five Ukrainian pharmaceutical companies is delivered via /wp-content/uploads/hpf-samples.js.</li><li><strong>Reverse proxy:</strong> Apache HTTP Server proxies requests from the /hpf/ URL path to localhost:8901, providing TLS termination, access logging, and integration with the broader research portal.</li></ol>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>This topology enables HPF-P to function simultaneously as a research instrument and a demonstration platform accessible to non-technical stakeholders through a standard web browser.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-2-data-layer-contracts-validation-and-imputation"><strong>2.2.2 Data Layer: Contracts, Validation, and Imputation</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The data layer implements strict input contracts that enforce structural consistency before any analytical computation proceeds. HPF-P accepts two complementary inputs: a time-series CSV file containing transactional observations and a JSON metadata document describing SKU-level characteristics and portfolio constraints.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="csv-data-contract"><strong>CSV Data Contract</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The CSV input follows a columnar schema with four required fields and two optional fields:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>Column</th><th>Type</th><th>Required</th><th>Description</th></tr></thead><tbody><tr><td>date</td><td>ISO 8601</td><td>Yes</td><td>Month of observation</td></tr><tr><td>sku_id</td><td>string</td><td>Yes</td><td>Unique SKU identifier matching metadata keys</td></tr><tr><td>quantity</td><td>float</td><td>Yes</td><td>Units sold (>= 0)</td></tr><tr><td>revenue</td><td>float</td><td>Yes</td><td>Revenue in UAH</td></tr><tr><td>price</td><td>float</td><td>No</td><td>Unit price (derived as revenue/quantity if absent)</td></tr><tr><td>marketing_spend</td><td>float</td><td>No</td><td>Promotional expenditure</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="metadata-json-contract"><strong>Metadata JSON Contract</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The metadata document provides institutional and economic context that cannot be inferred from transaction data alone:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code class="language-json">{
+  "company": "string",
+  "currency": "UAH",
+  "market_context": { "reimbursement_model": "string" },
+  "portfolio_rules": { "default_min_weight": 0.0, "default_max_weight": 0.35 },
+  "skus": {
+    "SKU_ID": {
+      "status": "active|discontinuing",
+      "demand": {
+        "historical_coverage_ratio": "[0.0, 1.0]",
+        "observability": "high|medium|low"
+      },
+      "economics": {
+        "gross_margin": "[0.0, 1.0]",
+        "price_elasticity": "float"
+      },
+      "allocation_bounds": { "min": "float", "max": "float" }
+    }
+  }
+}</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>This dual-input architecture reflects a fundamental design principle: transactional data provides <em>what happened</em>, while metadata encodes <em>what is known about the decision environment</em>. The separation allows the DRI computation to diagnose discrepancies between claimed and observed data quality.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="validation-pipeline"><strong>Validation Pipeline</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Module M1 performs the following validation and preparation steps:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true} -->
+<ol><li><strong>Schema validation:</strong> Required columns are verified; their absence triggers an HTTP 400 error with field-level diagnostics.</li><li><strong>Cross-referencing:</strong> SKU identifiers in the CSV are intersected with metadata keys. Only SKUs present in <em>both</em> sources proceed through the pipeline, ensuring that every analysed SKU has both observational and institutional characterisation.</li><li><strong>Type coercion:</strong> Date fields are parsed via pd.to<em>datetime with error coercion; numeric fields are converted via pd.to</em>numeric. Invalid entries become NaN values subject to imputation.</li><li><strong>Imputation:</strong> Missing values in quantity and revenue are filled using three-stage interpolation: linear interpolation across the time series, forward fill for leading gaps, and backward fill for trailing gaps. This conservative approach preserves observed trends while minimising the introduction of synthetic variance.</li><li><strong>Quality flagging:</strong> For each SKU, the raw missingness ratio is computed as ρ<em>miss = n</em>missing / (2 · n<em>obs), where the denominator accounts for both quantity and revenue columns. SKUs with ρ</em>miss < 0.20 receive a quality flag of OK; those exceeding this threshold are flagged as DATA_QUALITY=POOR.</li></ol>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>Critically, the raw missingness ratios are preserved <em>prior to imputation</em> and passed to Module M2 for use in DRI computation. This design ensures that the DRI reflects actual data availability rather than post-imputation completeness — a distinction that directly implements the HPF principle that data absence is an informational signal, not merely a technical defect to be corrected.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-3-dri-computation-engine"><strong>2.2.3 DRI Computation Engine</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Module M2 computes the Decision Readiness Index for each SKU as a weighted composite of five diagnostic dimensions, each measuring a distinct aspect of informational adequacy for portfolio decision-making.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="dri-formula"><strong>DRI Formula</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The DRI for SKU <em>s</em> is defined as:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>DRI(s) = w₁·R₁(s) + w₂·R₂(s) + w₃·R₃(s) + w₄·R₄(s) + w₅·R₅(s)</strong></p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where the weights are:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>Dimension</th><th>Symbol</th><th>Weight</th><th>Interpretation</th></tr></thead><tbody><tr><td>Data Completeness</td><td>R₁</td><td>0.25</td><td>Observability of key economic variables</td></tr><tr><td>Demand Signal Strength</td><td>R₂</td><td>0.25</td><td>Identifiability of market response</td></tr><tr><td>Tail Risk Observability</td><td>R₃</td><td>0.20</td><td>Visibility of downside outcomes</td></tr><tr><td>Regulatory / Constraint Feasibility</td><td>R₄</td><td>0.15</td><td>Institutional stability and compliance</td></tr><tr><td>Temporal Stability</td><td>R₅</td><td>0.15</td><td>Preservation of economic relationships over time</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>Each dimension R_i ∈ [0, 1], and consequently DRI ∈ [0, 1].</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="dimension-specifications"><strong>Dimension Specifications</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p><strong>R₁ — Data Completeness.</strong> This dimension takes the more pessimistic of two completeness indicators:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>R₁(s) = min(1 − ρ<em>miss(s), metadata</em>coverage(s))</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where ρ<em>miss is the raw missingness ratio computed in M1 (before imputation) and metadata</em>coverage is the historical<em>coverage</em>ratio declared in the metadata. By taking the minimum, the system ensures that neither self-reported metadata nor observed completeness alone can inflate the completeness assessment.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>R₂ — Demand Signal Strength.</strong> The coefficient of variation (CV) of observed demand serves as the base measure, with a penalty for heavy imputation:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>CV<em>eff(s) = CV(s) + min(2ρ</em>miss, 1) · 0.5</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>R₂(s) = clip(1 − CV_eff(s), 0, 1)</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The missingness penalty addresses a subtle but important bias: linear interpolation during imputation artificially reduces observed variance, which would overstate demand signal strength if the raw CV were used. The penalty term re-introduces uncertainty proportional to the degree of imputation.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>R₃ — Tail Risk Observability.</strong> This dimension quantifies whether the lower tail of the demand distribution is observable:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>R₃(s) = 0.5 + 0.5 · tanh(2 · (1 − τ_frac(s)))</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where τ_frac is the fraction of observations below the 10th percentile of quantity. The hyperbolic tangent transformation maps this fraction into a smooth score that is insensitive to outliers while penalising heavy-tailed distributions where downside risk cannot be reliably assessed.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>R₄ — Regulatory and Constraint Feasibility.</strong> This dimension integrates three institutional signals:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><em>Observability mapping:</em> high → 1.0, medium → 0.65, low → 0.35</li><li><em>Status adjustment:</em> SKUs with status = "discontinuing" receive a 0.15 penalty</li><li><em>Reimbursement bonus:</em> Public reimbursement models add 0.10 (reflecting greater price transparency)</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>R₄(s) = clip(obs<em>map(s) + status</em>adj(s) + reimb_adj(s), 0, 1)</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>R₅ — Temporal Stability via Chow Test.</strong> Structural breaks in the demand series are detected using the Chow test applied at annual segment boundaries. For a time series of <em>n</em> observations with potential breakpoints at t = 12k (where k = 1, 2, …), the test computes:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>F = ((RSS<em>full − RSS</em>restricted) / k) / (RSS_restricted / (n − 2k))</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where RSS<em>full is the residual sum of squares from the pooled regression and RSS</em>restricted = RSS₁ + RSS₂ from segment-specific regressions. A breakpoint is declared significant at p < 0.05. The temporal stability score is then:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>R₅(s) = 1 − n<em>breaks / n</em>breakpoints</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>For series too short to support breakpoint analysis (fewer than 6 observations), a default value of R₅ = 0.85 is assigned — a conservative assumption that acknowledges limited temporal evidence without excessively penalising new SKUs.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="drl-assignment"><strong>DRL Assignment</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The computed DRI score maps to one of five Decision Readiness Levels via threshold classification:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>DRL</th><th>DRI Range</th><th>Permitted Strategy</th><th>Economic Interpretation</th></tr></thead><tbody><tr><td>1</td><td>< 0.25</td><td>ABSTAIN_HOLD</td><td>Insufficient information; preserve status quo</td></tr><tr><td>2</td><td>[0.25, 0.45)</td><td>REVENUE_PROPORTIONAL</td><td>Minimal optimisation; proportional allocation</td></tr><tr><td>3</td><td>[0.45, 0.65)</td><td>CONSTRAINED_LP</td><td>Linear programming with hard constraints</td></tr><tr><td>4</td><td>[0.65, 0.80)</td><td>CVaR_MV</td><td>Mean-variance with risk controls</td></tr><tr><td>5</td><td>>= 0.80</td><td>MULTI<em>OBJECTIVE</em>ML</td><td>Full multi-objective optimisation</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>This mapping directly operationalises the HPF principle of conditional analytical permissibility: the complexity of the optimisation method applied to each SKU is bounded by the quality of information available about that SKU.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-4-ml-estimation-module"><strong>2.2.4 ML Estimation Module</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Module M3 provides the statistical estimates required by the optimisation and simulation modules. For each SKU, it produces four outputs: demand forecasts, price elasticity estimates, risk scores, and per-SKU revenue projection series.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="demand-forecasting-with-fourier-features"><strong>Demand Forecasting with Fourier Features</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Demand is modelled as a linear trend augmented with Fourier seasonal components at period 12 (monthly cycle):</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>q<em>t = β₀ + β₁t + Σ</em>{k=1}^{2} [α<em>k sin(2πkt/12) + γ</em>k cos(2πkt/12)] + ε_t</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This specification captures both linear growth/decline trends and the first two harmonics of annual seasonality. The model is estimated via ordinary least squares (OLS) using the statsmodels library. Twelve-month-ahead forecasts are generated by evaluating the fitted model at t = n, n+1, …, n+11, with 95% confidence intervals obtained from the prediction distribution.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The choice of Fourier features over ARIMA or more complex time-series models reflects a deliberate trade-off aligned with HPF principles. Fourier-augmented linear models are:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><strong>Interpretable:</strong> Each coefficient has a direct physical meaning (trend slope, seasonal amplitude, seasonal phase).</li><li><strong>Robust to short series:</strong> The model requires only 2K + 2 = 6 parameters for K = 2 harmonics, enabling reliable estimation even with 18–24 monthly observations.</li><li><strong>Stable under imputation:</strong> Unlike autoregressive models that propagate imputation artefacts through lagged terms, Fourier models treat each observation independently.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="price-elasticity-estimation"><strong>Price Elasticity Estimation</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Price elasticity is estimated via log-log OLS regression:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>ln(q<em>t) = α + η·ln(p</em>t) + ε_t</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where η is the price elasticity of demand. The estimation is attempted only when sufficient price variation exists (standard deviation > 10⁻⁴) and at least 6 observations are available. When these conditions are not met, the system falls back to the metadata-provided elasticity value — a practical application of the DRI principle that estimation should not be attempted when data conditions are insufficient.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="risk-scoring"><strong>Risk Scoring</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Each SKU receives a composite risk score combining two indicators:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>risk(s) = 0.5 · volatility(s) + 0.5 · tail_ratio(s)</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li>volatility is the mean of rolling 12-month revenue coefficient of variation</li><li>tail_ratio is |CVaR₉₅| / |r̄| — the ratio of the 5th-percentile revenue to mean revenue</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>This dual construction captures both <em>dispersion risk</em> (how much revenue fluctuates) and <em>tail risk</em> (how severe the worst outcomes are relative to the average).</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-5-multi-strategy-portfolio-optimisation"><strong>2.2.5 Multi-Strategy Portfolio Optimisation</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Module M4 implements a competitive multi-strategy approach to portfolio weight determination. Rather than committing to a single optimisation methodology, the platform generates portfolio weights under eight distinct strategies and selects the best performer via empirical evaluation. This design reflects the No Free Lunch theorem and the HPF recognition that no single optimisation approach dominates across all data conditions.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="strategy-catalogue"><strong>Strategy Catalogue</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The eight strategies span a spectrum from naive baselines to sophisticated multi-objective formulations:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>1. Equal-Weight.</strong> The 1/N baseline:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>w_s^EW = 1/N for all s</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This strategy serves as the benchmark against which all others are evaluated. Its inclusion is not trivial: DeMiguel et al. (2009) demonstrated that 1/N portfolios frequently outperform optimised portfolios when estimation error dominates.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>2. DRL-Grouped.</strong> The original HPF strategy from Section 2.1, where each DRL group receives a budget proportional to its aggregate profit potential, and within-group allocation follows the DRL-specific strategy (hold for DRL-1, revenue-proportional for DRL-2, constrained LP for DRL-3, CVaR/MV for DRL-4, multi-objective for DRL-5). This is the only strategy that directly implements diagnostic gating.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>3. Momentum.</strong> Weights proportional to the cubed ratio of forecast to historical demand:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>w<em>s^Mom ∝ (q̂</em>s / q̄_s)³</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The cubic exponent concentrates allocation on SKUs exhibiting strong growth trends, reflecting the empirical observation that pharmaceutical demand momentum tends to persist due to physician prescribing inertia and formulary lock-in effects.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>4. DRI-Weighted.</strong> Allocation proportional to the squared DRI score, scaled by a DRL-dependent multiplier:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>w<em>s^DRI ∝ m(DRL</em>s) · DRI(s)²</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where m(·) ∈ {0.02, 0.2, 1.0, 2.5, 5.0} for DRL levels 1 through 5. This strategy rewards informational adequacy: SKUs with higher decision readiness receive disproportionately larger allocations.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>5. Risk-Parity.</strong> Inverse-volatility weighting:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>w<em>s^RP ∝ 1 / max(σ</em>s, 0.02)</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This strategy equalises risk contribution across SKUs, providing a hedge against concentration risk in volatile pharmaceutical markets.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>6. Profit-Maximiser.</strong> Squared profit potential:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>w<em>s^PM ∝ (margin</em>s · q̂_s)²</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>By squaring the profit potential, this strategy aggressively concentrates on top-performing SKUs — appropriate when the portfolio manager prioritises expected return over diversification.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>7. Mean-Variance.</strong> Return-to-variance ratio:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>w<em>s^MV ∝ max(0.01, (r</em>s + 0.1) / σ_s²)</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where r_s is the forecast return relative to historical mean. The additive constant 0.1 prevents negative or zero weights for declining SKUs while maintaining the variance-penalised structure.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p><strong>8. HPF-Ensemble.</strong> The arithmetic mean of all non-equal strategies:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>w<em>s^Ens = (1/6) · Σ</em>{k ∈ {Mom, DRI, RP, PM, MV, DRL}} w_s^(k)</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>This ensemble approach provides natural diversification across optimisation philosophies, reducing the risk of any single strategy's failure mode dominating.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="strategy-selection-via-monte-carlo-evaluation"><strong>Strategy Selection via Monte Carlo Evaluation</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>After generating all eight weight vectors, the platform evaluates each strategy through a rapid 200-iteration Monte Carlo simulation. For each iteration, demand and price are sampled from normal distributions centred on forecast values, and the total expected portfolio revenue is computed:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>R<em>total^(k) = Σ</em>{i=1}^{200} Σ<em>s w</em>s^(k) · margin<em>s · q̃</em>{s,i} · p̃_{s,i}</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The strategy with the highest total expected revenue is selected as the recommended allocation. This empirical competition replaces <em>a priori</em> strategy selection with data-driven performance evaluation, ensuring that the chosen approach is demonstrably superior under the current data conditions.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>All strategy scores are preserved in the output diagnostics, enabling the portfolio manager to inspect the competitive landscape and understand how close alternative strategies performed.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-6-monte-carlo-simulation-engine"><strong>2.2.6 Monte Carlo Simulation Engine</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Modules M5 and M5b provide stochastic evaluation of the selected portfolio through two complementary simulation frameworks.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="portfolio-level-risk-simulation-m5"><strong>Portfolio-Level Risk Simulation (M5)</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The primary Monte Carlo engine executes 1,000 iterations to produce portfolio-level risk metrics. Each iteration proceeds as follows:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true} -->
+<ol><li><strong>Demand sampling:</strong> q̃<em>s ~ N(q̂</em>s, σ̂_{q,s}), clipped at zero</li><li><strong>Price sampling:</strong> p̃<em>s ~ N(p̄</em>s, 0.05·p̄_s), clipped at 10⁻⁹</li><li><strong>Portfolio return:</strong> R̃ = Σ<em>s w</em>s · margin<em>s · q̃</em>s · p̃_s</li></ol>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>From the empirical distribution of {R̃<em>i}</em>{i=1}^{1000}, the platform computes:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><strong>VaR-95:</strong> The 5th percentile of portfolio returns</li><li><strong>CVaR-95:</strong> E[R̃ | R̃ ≤ VaR₉₅] — the expected return conditional on being in the worst 5% of outcomes</li><li><strong>Return distribution statistics:</strong> Mean, standard deviation, P5, P95</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="deterministic-vs-stochastic-modes"><strong>Deterministic vs. Stochastic Modes</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>HPF-P supports two reproducibility modes controlled by the deterministic flag in the API request:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><strong>Deterministic mode</strong> (default): The pseudo-random number generator (PRNG) is seeded with a fixed base seed of 42. Each iteration <em>i</em> uses seed 42 + i, guaranteeing identical outputs for identical inputs across runs. This mode supports auditable, reproducible analysis.</li><li><strong>Stochastic mode:</strong> A random base seed is generated per run via numpy.random.default_rng().integers(0, 2³¹). Each iteration then uses base + i, ensuring within-run reproducibility (same relative perturbations) while producing different results across runs. This mode enables sensitivity analysis and robustness testing.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="time-series-revenue-simulation-m5b"><strong>Time-Series Revenue Simulation (M5b)</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The time-series simulation engine projects 12-month revenue trajectories across three scenarios:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true} -->
+<ol><li><strong>Historical:</strong> Actual observed monthly portfolio revenue (no simulation)</li><li><strong>Baseline (Equal-Weight):</strong> Revenue under 1/N allocation, simulated across 500 paths</li><li><strong>HPF-Optimised:</strong> Revenue under the selected strategy weights, simulated across 500 paths</li></ol>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>For each simulated path, monthly SKU-level revenue is sampled from the Fourier forecast distributions and aggregated using the respective weight vectors. A calibration step scales both simulated scenarios to match the last observed historical revenue value, ensuring visual and numerical comparability.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The prediction line is the <strong>median (P50)</strong> across simulation paths — chosen over the mean for its robustness to outliers. Uncertainty bands are reported at four percentile levels: <strong>P10, P25, P75, and P90</strong>, providing a comprehensive view of the distribution tails.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="economic-comparison-metrics"><strong>Economic Comparison Metrics</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Module M5b computes a rich set of economic comparison metrics between the baseline and HPF scenarios:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><strong>Sharpe ratio:</strong> Annualised excess return per unit of total volatility, computed from month-over-month returns with a 0.5% monthly risk-free rate proxy (reflecting NBU policy rates)</li><li><strong>Sortino ratio:</strong> Annualised excess return per unit of downside deviation, penalising only negative returns</li><li><strong>Calmar ratio:</strong> Annualised return divided by maximum drawdown, measuring return per unit of peak-to-trough loss</li><li><strong>VaR-95 and CVaR-95:</strong> Computed on total horizon revenue across all simulation paths</li><li><strong>Maximum drawdown:</strong> Median per-path maximum drawdown, avoiding the mean-path smoothing bias</li><li><strong>Probability of outperformance:</strong> Fraction of simulation paths where HPF total revenue exceeds baseline total revenue</li><li><strong>Breakeven month:</strong> First month where mean HPF revenue consistently exceeds mean baseline revenue</li><li><strong>Revenue gain percentage:</strong> (R<em>HPF − R</em>baseline) / R_baseline × 100</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-7-client-side-scenario-engine"><strong>2.2.7 Client-Side Scenario Engine</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>In addition to the server-side API, HPF-P includes a browser-based scenario engine that provides immediate, zero-latency portfolio analysis for predefined Ukrainian pharmaceutical company scenarios. This client-side component serves both a pedagogical function — enabling stakeholders to explore DRI/DRL concepts interactively — and a practical demonstration function, showcasing the platform's capabilities without requiring data upload.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="predefined-company-scenarios"><strong>Predefined Company Scenarios</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Five scenarios model stylised Ukrainian pharmaceutical manufacturers with distinct portfolio characteristics:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>Company</th><th>SKUs</th><th>Volatility Profile</th><th>Growth Trend</th><th>Design Rationale</th></tr></thead><tbody><tr><td>Farmak</td><td>18</td><td>Low</td><td>Moderate</td><td>Market leader; stable, diversified portfolio</td></tr><tr><td>Darnitsa</td><td>15</td><td>Low</td><td>Moderate</td><td>Top-3 manufacturer; generic-heavy portfolio</td></tr><tr><td>Arterium</td><td>16</td><td>Medium</td><td>Moderate</td><td>Mid-market with therapeutic diversification</td></tr><tr><td>Yuria-Pharm</td><td>14</td><td>Medium</td><td>High</td><td>Growth-oriented infusion/injectable specialist</td></tr><tr><td>Zdorovye (Kharkiv)</td><td>12</td><td>Extreme</td><td>Negative</td><td>War-affected manufacturer; structural disruption</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>The Zdorovye scenario is particularly significant: it models a manufacturer operating in a conflict zone (Kharkiv), where extreme volatility, negative growth, and structural breaks are the norm. This scenario stress-tests the DRI framework's ability to correctly identify situations where optimisation should be <em>withheld</em> rather than applied — the ABSTAIN_HOLD outcome that Section 2.1 identified as a fundamental contribution of HPF.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="synthetic-data-generation"><strong>Synthetic Data Generation</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Each scenario generates synthetic time-series data using a tiered SKU model:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><strong>Stars (~30%):</strong> High growth rate, low volatility — representing established blockbuster products</li><li><strong>Stable (~40%):</strong> Moderate growth, moderate volatility — the portfolio backbone</li><li><strong>Declining (~30%):</strong> Negative growth, high volatility — products approaching end-of-lifecycle or facing generic competition</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph -->
+<p>For each SKU, monthly quantity data is generated as:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>q<em>t = base · (1 + g)^{t/12} · (1 + A·sin(2πt/12 + φ)) + ε</em>t</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>where g is the annual growth rate, A is the seasonal amplitude, φ is the seasonal phase, and ε_t ~ N(0, σ²) represents noise. The noise level σ varies by company scenario, producing the distinct volatility profiles described above.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="client-side-dri-computation"><strong>Client-Side DRI Computation</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The browser engine implements the same R₁–R₅ DRI formula as the server, using the Mulberry32 seeded PRNG for deterministic reproducibility:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code class="language-javascript">function mulberry32(seed) {
+    return function() {
+        seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+        let t = Math.imul(seed ^ seed &gt;&gt;&gt; 15, 1 | seed);
+        t = t + Math.imul(t ^ t &gt;&gt;&gt; 7, 61 | t) ^ t;
+        return ((t ^ t &gt;&gt;&gt; 14) &gt;&gt;&gt; 0) / 4294967296;
+    }
+}</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:paragraph -->
+<p>In deterministic mode, the PRNG is seeded with 42 + idx × 1000 (where idx is the scenario index), ensuring identical results across browser sessions. In stochastic mode, the seeded PRNG generates data while Math.random() drives Monte Carlo sampling, providing controlled stochasticity.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>The client-side engine implements six rebalancing strategies: DRL-Weighted, Momentum, Mean-Variance, Risk-Parity, Growth-DRI, and HPF-Ensemble — a subset of the server-side eight strategies adapted for browser execution performance.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2} -->
+<h2 id="2-2-8-technology-stack"><strong>2.2.8 Technology Stack</strong></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>HPF-P is built on an open-source scientific computing stack selected for mathematical rigour, audit transparency, and deployment simplicity.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="backend-python-scientific-computing"><strong>Backend: Python Scientific Computing</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>Library</th><th>Version</th><th>Role in HPF-P</th></tr></thead><tbody><tr><td><strong>FastAPI</strong></td><td>0.100+</td><td>Asynchronous HTTP API framework with automatic OpenAPI documentation</td></tr><tr><td><strong>NumPy</strong></td><td>1.26+</td><td>Array operations, random number generation, statistical computations</td></tr><tr><td><strong>Pandas</strong></td><td>2.1+</td><td>Time-series data management, CSV parsing, group-by aggregations</td></tr><tr><td><strong>SciPy</strong></td><td>1.11+</td><td>Statistical distributions (scipy.stats), linear programming (scipy.optimize.linprog)</td></tr><tr><td><strong>statsmodels</strong></td><td>0.14+</td><td>OLS regression, Fourier-augmented demand models, Chow test implementation</td></tr><tr><td><strong>CVXPY</strong></td><td>1.4+</td><td>Convex optimisation for CVaR/MV (DRL-4) and multi-objective (DRL-5) problems</td></tr><tr><td><strong>Pydantic</strong></td><td>2.0+</td><td>Request/response validation and serialisation</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>The choice of CVXPY with the SCS solver for portfolio optimisation reflects a design priority for <em>mathematical guarantees</em>: SCS provides convergence certificates for second-order cone programs, ensuring that the optimisation results are either optimal (within numerical tolerance) or explicitly flagged as infeasible. This is critical for the HPF framework's requirement that every analytical step be auditable.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="frontend-browser-based-visualisation"><strong>Frontend: Browser-Based Visualisation</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:table -->
+<figure class="wp-block-table"><table><thead><tr><th>Technology</th><th>Role</th></tr></thead><tbody><tr><td><strong>Chart.js</strong></td><td>Interactive portfolio visualisation: revenue trajectories, weight distributions, DRI bar charts, delta comparison bars, DRL donut charts, per-SKU forecast plots</td></tr><tr><td><strong>WordPress</strong></td><td>Content management, user authentication, page templating via hpf-project.php mu-plugin</td></tr><tr><td><strong>Vanilla JavaScript</strong></td><td>Scenario engine, DRI computation, seeded PRNG, UI state management</td></tr><tr><td><strong>CSS @media print</strong></td><td>PDF export via window.print() with print-optimised layouts</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="integration-architecture"><strong>Integration Architecture</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>The platform integrates with the broader research infrastructure through:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul><li><strong>Apache reverse proxy:</strong> Maps /hpf/ to the FastAPI backend, enabling co-location with the research portal</li><li><strong>WordPress mu-plugin system:</strong> The hpf-project.php plugin injects styles, scripts, and the scenario engine without modifying the WordPress core</li><li><strong>Static file serving:</strong> FastAPI serves the interactive frontend from /opt/hpf-app/static/, with scenario data loaded from /wp-content/uploads/hpf-samples.js</li><li><strong>CSV/JSON download:</strong> Analysis results can be exported for offline processing or integration with external tools</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 id="reproducibility-and-auditability"><strong>Reproducibility and Auditability</strong></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Every analysis run produces a unique run_id (UUID v4) and UTC timestamp, enabling complete audit trails. The deterministic mode ensures that identical inputs produce identical outputs across runs, supporting regulatory compliance and peer review. Module-level diagnostics expose intermediate computations, allowing reviewers to trace any portfolio recommendation back through the diagnostic pipeline to the raw input data.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:paragraph -->
+<p><strong>Summary.</strong> The HPF-P platform architecture translates the theoretical DRI/DRL framework into a production-ready decision-support system. Its eight-module pipeline enforces diagnostic gating at every stage, its multi-strategy optimisation approach empirically selects the best-performing allocation method, and its dual-mode simulation engine provides both reproducible analysis and sensitivity testing. The platform demonstrates that the HPF principle — that optimisation is an economically justified action only under diagnostically confirmed informational conditions — can be operationalised in a practical, deployable system for Ukrainian pharmaceutical portfolio management.</p>
+<!-- /wp:paragraph -->
