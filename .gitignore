@@ -4,3 +4,10 @@ venv/
 .env
 *.log
 *.tmp
+# Never expose dissertation drafts
+*.md
+*.docx
+*.html
+PLAN.md
+SPEC.md
+PROMOTION_READY.md
